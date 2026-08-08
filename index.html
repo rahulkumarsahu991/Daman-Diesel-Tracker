@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DAMAN DIESEL TRACKER</title>
+<style>
+  :root{
+    --brand-orange:#f28a1b;
+    --brand-navy:#1b1f4f;
+    --bg:#0a0e26;
+    --panel:#141a44;
+    --panel-2:#10143a;
+    --line:#262c5e;
+    --line-soft:#313770;
+    --txt:#edeffa;
+    --muted:#a6acd4;
+    --dim:#7176a3;
+    --blue:var(--brand-orange);
+    --green-bg:#064e3b; --green-tx:#6ee7b7;
+    --yellow-bg:#422006; --yellow-tx:#fbbf24; --yellow-br:#78350f;
+    --orange-bg:#431407; --orange-tx:#fb923c; --orange-br:#7c2d12;
+    --red-bg:#450a0a;    --red-tx:#f87171;    --red-br:#7f1d1d;
+    --accent:var(--brand-orange);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    position:relative;border-bottom:1px solid var(--line);padding:14px 24px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .logo{
+    width:44px;height:44px;border-radius:12px;flex:none;
+    background:var(--brand-navy);
+    box-shadow:0 4px 14px rgba(242,138,27,.25);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .logo img{width:100%;height:100%;object-fit:cover}
+  .title{
+    font-size:19px;font-weight:800;line-height:1.2;letter-spacing:.4px;
+    background:linear-gradient(90deg,#ffb066,var(--brand-orange) 55%,#ffb066);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .subtitle{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .status{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .status .txt{font-size:12px;color:var(--dim);text-align:right}
+  .status .txt b{color:var(--muted);font-weight:600}
+  .gauge-center{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:50px;height:50px;flex:none;
+    animation:gaugeGlow 2.4s ease-in-out infinite;
+  }
+  .gauge-center svg{width:100%;height:100%;display:block}
+  .gauge-center .needle-group{transform-box:fill-box;transform-origin:center;animation:needleJitter 1.7s ease-in-out infinite}
+  .gauge-center .tick{animation:tickPulse 2.4s ease-in-out infinite}
+  .gauge-center .tick:nth-child(1){animation-delay:0s}
+  .gauge-center .tick:nth-child(2){animation-delay:.12s}
+  .gauge-center .tick:nth-child(3){animation-delay:.24s}
+  .gauge-center .tick:nth-child(4){animation-delay:.36s}
+  .gauge-center .tick:nth-child(5){animation-delay:.48s}
+  .live-dot{
+    position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;
+    background:#34d399;border:2px solid var(--bg);
+    animation:livePulse 1.8s ease-out infinite;
+  }
+  @keyframes gaugeGlow{
+    0%,100%{filter:drop-shadow(0 3px 12px rgba(242,138,27,.35))}
+    50%{filter:drop-shadow(0 3px 20px rgba(242,138,27,.75))}
+  }
+  @keyframes needleJitter{
+    0%,100%{transform:rotate(-7deg)}
+    50%{transform:rotate(7deg)}
+  }
+  @keyframes tickPulse{
+    0%,100%{opacity:1}
+    50%{opacity:.35}
+  }
+  @keyframes livePulse{
+    0%{box-shadow:0 0 0 0 rgba(52,211,153,.65)}
+    70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}
+    100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .gauge-center,.gauge-center .needle-group,.gauge-center .tick,.live-dot{animation:none}
+  }
+  .refresh-btn{
+    width:34px;height:34px;border-radius:9px;flex:none;cursor:pointer;
+    background:var(--panel-2);border:1px solid var(--line-soft);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s,border-color .15s;
+  }
+  .refresh-btn:hover{background:#1c2158;color:var(--txt);border-color:var(--brand-orange)}
+  .refresh-btn svg{width:16px;height:16px;transition:transform .5s ease}
+  .refresh-btn.spinning svg{animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .wrap{max-width:1320px;margin:0 auto;padding:22px 24px 60px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+
+  /* ---- filters ---- */
+  .filters{padding:16px 18px;display:grid;grid-template-columns:repeat(5,1fr) auto;gap:14px;align-items:end}
+  .field label{display:block;font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
+  select,input[type=date]{
+    width:100%;height:40px;padding:0 10px;border-radius:8px;
+    background:var(--panel-2);color:var(--txt);border:1px solid var(--line-soft);
+    font-size:14px;font-family:inherit;
+  }
+  select:focus,input[type=date]:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(242,138,27,.35)}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+
+  /* ---- searchable combo ---- */
+  .combo{position:relative}
+  .combo-input{
+    width:100%;height:40px;padding:0 34px 0 10px;border-radius:8px;
+    background:var(--panel-2);color:var(--txt);border:1px solid var(--line-soft);
+    font-size:14px;font-family:inherit;
+  }
+  .combo-input::placeholder{color:var(--dim)}
+  .combo-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(242,138,27,.35)}
+  .combo-caret{position:absolute;right:11px;top:29px;pointer-events:none;color:var(--dim);font-size:11px}
+  .combo-list{
+    position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:60;
+    max-height:280px;overflow-y:auto;background:var(--panel-2);
+    border:1px solid var(--line-soft);border-radius:9px;
+    box-shadow:0 12px 28px rgba(0,0,0,.45);
+    display:none;
+  }
+  .combo-list.open{display:block}
+  .combo-opt{padding:9px 12px;font-size:13.5px;cursor:pointer;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .combo-opt:hover,.combo-opt.hl{background:#1c2158}
+  .combo-opt.active{color:var(--brand-orange);font-weight:600}
+  .combo-empty{padding:10px 12px;color:var(--dim);font-style:italic;font-size:13px}
+  .btn{
+    height:40px;padding:0 16px;border-radius:8px;background:var(--panel-2);
+    border:1px solid var(--line-soft);color:var(--txt);font-size:13.5px;cursor:pointer;font-family:inherit;
+  }
+  .btn:hover:not(:disabled){background:#1c2158}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ---- metrics ---- */
+  .metrics{margin-top:16px;border:1px dashed var(--line-soft);border-radius:12px;padding:26px 20px;min-height:120px;
+           display:flex;align-items:center;justify-content:center}
+  .metrics .hint{color:var(--dim);font-style:italic}
+  .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px;width:100%}
+  .metric{text-align:center}
+  .metric .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .metric .v{font-size:26px;font-weight:700;margin-top:6px}
+  .metric .s{font-size:11.5px;color:var(--dim);margin-top:3px}
+
+  /* ---- legend ---- */
+  details.legend{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  details.legend summary{cursor:pointer;color:var(--muted);font-size:13.5px;list-style:none}
+  details.legend summary::-webkit-details-marker{display:none}
+  details.legend summary:before{content:"▸ ";color:var(--dim)}
+  details.legend[open] summary:before{content:"▾ "}
+  .legend-body{margin-top:12px;display:grid;gap:8px;font-size:13px;color:var(--muted)}
+  .legend-body div{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  /* ---- table ---- */
+  .tablecard{margin-top:16px;overflow:hidden}
+  .tbar{padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+  .tbar .count{font-size:13.5px;color:var(--muted)}
+  .tbar .count b{color:var(--txt)}
+  .pager{margin-left:auto;display:flex;gap:8px}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:960px}
+  th{
+    text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  td{padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13.5px}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  th.num{text-align:right}
+  tbody tr{border-left:3px solid transparent}
+  tbody tr.flagged{border-left-color:var(--accent)}
+  tbody tr:hover{background:#171c48}
+  .vehicle{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid transparent}
+  .pill.truck{background:var(--green-bg);color:var(--green-tx)}
+  .pill.other{background:#21274f;color:var(--muted)}
+  .flag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;margin:2px 4px 2px 0;border:1px solid}
+  .f-future{background:var(--yellow-bg);color:var(--yellow-tx);border-color:var(--yellow-br)}
+  .f-dup{background:var(--orange-bg);color:var(--orange-tx);border-color:var(--orange-br)}
+  .f-odo{background:var(--red-bg);color:var(--red-tx);border-color:var(--red-br)}
+  .empty{padding:40px;text-align:center;color:var(--dim);font-style:italic}
+  .setup{margin-top:18px;font-size:12.5px;color:var(--dim);line-height:1.7}
+  .setup code{background:var(--panel-2);border:1px solid var(--line-soft);padding:1px 6px;border-radius:5px;color:var(--muted)}
+  @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.wrap{padding:16px}}
+
+  /* ---- fancy card depth (all sizes) ---- */
+  .card{box-shadow:0 8px 24px rgba(0,0,0,.28)}
+
+  /* ---- mobile ---- */
+  @media(max-width:720px){
+    .topbar{flex-wrap:wrap;justify-content:center;text-align:center;padding:14px;row-gap:8px}
+    .topbar > div:not(.status):not(.gauge-center){display:flex;flex-direction:column;align-items:center}
+    .title{font-size:17px}
+    .subtitle{font-size:11.5px}
+    .gauge-center{
+      position:static;transform:none;width:38px;height:38px;order:2;
+    }
+    .status{margin-left:0;width:100%;justify-content:center;order:3}
+    .status .txt{text-align:center}
+  }
+  @media(max-width:640px){
+    body{font-size:13.5px}
+    .wrap{padding:12px}
+    .filters{grid-template-columns:1fr;padding:14px}
+    .filters .btn{width:100%}
+    .metrics{padding:18px 14px}
+    .metric .v{font-size:21px}
+    .tbar{flex-wrap:wrap;row-gap:10px}
+    .pager{width:100%;flex-wrap:wrap;gap:8px}
+    #exportCsv{flex:1 1 100%}
+    #prev,#next{flex:1 1 calc(50% - 4px)}
+    th,td{padding:10px 10px;font-size:12.5px}
+    .setup{font-size:11.5px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><img src="logo.png" alt="Daman Diesel Tracker logo" /></div>
+  <div>
+    <div class="title">DAMAN DIESEL TRACKER</div>
+    <div class="subtitle">Daman Group Fleet · Live</div>
+  </div>
+  <div class="gauge-center" title="Live fuel gauge">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gaugeBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#3a4090"/>
+          <stop offset="1" stop-color="#171b48"/>
+        </linearGradient>
+      </defs>
+      <rect x="1.5" y="1.5" width="61" height="61" rx="16" fill="url(#gaugeBg)" stroke="#f28a1b" stroke-opacity=".3" stroke-width="1.5"/>
+      <circle cx="32" cy="32" r="24" fill="#0a0d26"/>
+      <circle cx="32" cy="32" r="20" fill="#f4f5fb"/>
+      <circle cx="32" cy="32" r="20" fill="none" stroke="#d8dbea" stroke-width="1"/>
+      <g stroke="#f28a1b" stroke-width="3.4" stroke-linecap="round">
+        <line class="tick" x1="15" y1="23.5" x2="18.6" y2="27"/>
+        <line class="tick" x1="21.5" y1="13.5" x2="23.9" y2="17.7"/>
+        <line class="tick" x1="32" y1="10" x2="32" y2="15"/>
+        <line class="tick" x1="42.5" y1="13.5" x2="40.1" y2="17.7"/>
+        <line class="tick" x1="49" y1="23.5" x2="45.4" y2="27"/>
+      </g>
+      <g class="needle-group">
+        <line x1="32" y1="32" x2="20" y2="20" stroke="#f28a1b" stroke-width="4.2" stroke-linecap="round"/>
+        <circle cx="32" cy="32" r="4.6" fill="#0a0d26"/>
+        <circle cx="32" cy="32" r="1.8" fill="#f28a1b"/>
+      </g>
+    </svg>
+    <span class="live-dot"></span>
+  </div>
+  <div class="status">
+    <div class="txt" id="status">Loading…</div>
+    <button class="refresh-btn" id="refreshBtn" title="Refresh live data from sheet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+        <path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- filters -->
+  <div class="card filters">
+    <div class="field combo" id="fTruckWrap">
+      <label for="fTruck">Truck</label>
+      <input type="text" id="fTruck" class="combo-input" placeholder="All trucks" autocomplete="off" />
+      <span class="combo-caret">▾</span>
+      <div class="combo-list" id="fTruckList"></div>
+    </div>
+    <div class="field combo" id="fPumpWrap">
+      <label for="fPump">Pump / Vendor</label>
+      <input type="text" id="fPump" class="combo-input" placeholder="All pumps" autocomplete="off" />
+      <span class="combo-caret">▾</span>
+      <div class="combo-list" id="fPumpList"></div>
+    </div>
+    <div class="field">
+      <label for="fFlag">Flags</label>
+      <select id="fFlag">
+        <option value="">All entries</option>
+        <option value="any">Any flag</option>
+        <option value="none">No flags</option>
+        <option value="future">Future-dated</option>
+        <option value="dup">Possible duplicate</option>
+        <option value="odo">Odo regression</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fFrom">From</label>
+      <input type="date" id="fFrom" />
+    </div>
+    <div class="field">
+      <label for="fTo">To</label>
+      <input type="date" id="fTo" />
+    </div>
+    <button class="btn" id="fClear">Clear filters</button>
+  </div>
+
+  <!-- metrics -->
+  <div class="metrics" id="metrics">
+    <div class="hint">Select a truck to view Mileage and Cost/km metrics.</div>
+  </div>
+
+  <!-- legend -->
+  <details class="legend">
+    <summary>Flag legend</summary>
+    <div class="legend-body">
+      <div><span class="flag f-future">Future-dated</span> Entry date is after today.</div>
+      <div><span class="flag f-dup">Possible duplicate</span> Same truck, date, litres and amount as another entry.</div>
+      <div><span class="flag f-odo">Odo regression</span> Odometer is lower than the truck's previous reading.</div>
+    </div>
+  </details>
+
+  <!-- table -->
+  <div class="card tablecard">
+    <div class="tbar">
+      <div class="count" id="count">0 entries</div>
+      <div class="pager">
+        <button class="btn" id="exportCsv">⬇ Export CSV</button>
+        <button class="btn" id="prev">← Prev</button>
+        <button class="btn" id="next">Next →</button>
+      </div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Vehicle</th><th>Type</th><th>Pump</th>
+            <th class="num">Litres</th><th class="num">Rate ₹/L</th>
+            <th class="num">Amount ₹</th><th class="num">Odometer km</th><th>Flags</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" style="display:none">No entries match these filters.</div>
+  </div>
+
+  <div class="setup">
+    Data source: Google Sheet. To point this at your own sheet, open this file in a text editor and set
+    <code>SHEET_ID</code> and <code>SHEET_NAME</code> at the top of the script. Share the sheet as
+    <b>Anyone with the link · Viewer</b>. Column headers expected:
+    <code>Date, Vehicle, Type, Pump, Litres, Rate, Amount, Odometer</code>.
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1. CONFIG  —  yahan apni Google Sheet ki details daalein
+   ============================================================ */
+// Published-to-web CSV link (File > Share > Publish to web in Google Sheets).
+// Ye link "Anyone with link" sharing ki zaroorat ke bina bhi public rehta hai
+// aur sheet me jo bhi naya data add hoga, wo yahan automatically live aa jaayega.
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS95qoPelcrnVI14_JMrzZUKgN5f78e_lNqNFiIPjPUhDLldw7CvIWWAVNPo-ZoqPLWJlu9HQQYEV5h/pub?gid=0&single=true&output=csv";
+const PAGE_SIZE  = 200;
+
+/* Sheet ka column header -> app field mapping.
+   Header ka naam thoda alag ho to yahan add kar dein.
+   Note: is sheet me "Necessitys" column asal me Date hai, aur
+   "Desiel Amount" asal me total Amount hai (sheet ki apni naming). */
+const FIELD_ALIASES = {
+  date:     ["date","dt","fill date","entry date","tarikh","necessitys"],
+  vehicle:  ["vehicle","truck","vehicle no","vehicle number","reg no","registration","vehicle no."],
+  type:     ["type","vehicle type","category"],
+  pump:     ["pump","vendor","pump / vendor","pump/vendor","station","fuel station","petrol pump"],
+  litres:   ["litres","liters","ltr","qty","quantity","litre","qty."],
+  rate:     ["rate","rate ₹/l","rate/l","price","price per litre","rate per litre"],
+  amount:   ["amount","amount ₹","total","total amount","value","desiel amount","diesel amount"],
+  odometer: ["odometer","odometer km","odo","odo km","km","meter reading","reading"]
+};
+
+/* ============================================================
+   2. STATE
+   ============================================================ */
+let ALL = [];      // saari rows (flags ke saath)
+let VIEW = [];     // filtered rows
+let page = 1;
+
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   3. LOAD FROM GOOGLE SHEET
+   ============================================================ */
+function csvUrl(){
+  return CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cachebust=" + Date.now();
+}
+
+async function load(){
+  const btn = $("refreshBtn");
+  if(btn) btn.classList.add("spinning");
+  if(!CSV_URL){
+    $("status").innerHTML = "<b>Demo data</b><br>Set CSV_URL to go live";
+    ingest(demoRows());
+    if(btn) btn.classList.remove("spinning");
+    return;
+  }
+  try{
+    const res = await fetch(csvUrl(), {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const rows = parseCsv(await res.text());
+    if(rows.length < 2) throw new Error("Sheet is empty");
+    ingest(mapRows(rows));
+    $("status").innerHTML = "<b>Connected</b><br>Synced " + new Date().toLocaleTimeString();
+  }catch(err){
+    $("status").innerHTML = "<b>Sheet not reachable</b><br>Showing demo data";
+    console.error(err);
+    ingest(demoRows());
+  }finally{
+    if(btn) btn.classList.remove("spinning");
+  }
+}
+
+/* CSV parser — quotes, commas aur newlines handle karta hai */
+function parseCsv(text){
+  const rows=[]; let row=[], cell="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){cell+='"';i++;} else q=false; }
+      else cell+=c;
+    }else{
+      if(c === '"') q=true;
+      else if(c === ","){ row.push(cell); cell=""; }
+      else if(c === "\n"){ row.push(cell); rows.push(row); row=[]; cell=""; }
+      else if(c !== "\r") cell+=c;
+    }
+  }
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(v => String(v).trim() !== ""));
+}
+
+function mapRows(rows){
+  const head = rows[0].map(h => h.trim().toLowerCase());
+  const idx = {};
+  for(const key in FIELD_ALIASES){
+    idx[key] = head.findIndex(h => FIELD_ALIASES[key].includes(h));
+  }
+  return rows.slice(1).map(r => ({
+    date:     idx.date     > -1 ? r[idx.date]     : "",
+    vehicle:  idx.vehicle  > -1 ? r[idx.vehicle]  : "",
+    type:     idx.type     > -1 ? r[idx.type]     : "Truck",
+    pump:     idx.pump     > -1 ? r[idx.pump]     : "",
+    litres:   idx.litres   > -1 ? r[idx.litres]   : "",
+    rate:     idx.rate     > -1 ? r[idx.rate]     : "",
+    amount:   idx.amount   > -1 ? r[idx.amount]   : "",
+    odometer: idx.odometer > -1 ? r[idx.odometer] : ""
+  }));
+}
+
+/* ============================================================
+   4. PARSE + FLAG
+   ============================================================ */
+function num(v){
+  const n = parseFloat(String(v == null ? "" : v).replace(/[^0-9.\-]/g,""));
+  return isNaN(n) ? null : n;
+}
+
+/* dd-mm-yyyy, dd/mm/yyyy, yyyy-mm-dd sab chalega */
+function parseDate(v){
+  const s = String(v == null ? "" : v).trim();
+  if(!s) return null;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(m){
+    let y = +m[3]; if(y < 100) y += 2000;
+    return new Date(y, +m[2]-1, +m[1]);
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+const pad = n => String(n).padStart(2,"0");
+const fmtDate = d => d ? pad(d.getDate())+"-"+pad(d.getMonth()+1)+"-"+d.getFullYear() : "—";
+const fmtNum = (n,dp) => n == null ? "—" : n.toLocaleString("en-IN",{minimumFractionDigits:dp,maximumFractionDigits:dp});
+
+function ingest(raw){
+  const rows = raw.map(r => ({
+    dateObj: parseDate(r.date),
+    vehicle: String(r.vehicle || "").trim(),
+    type:    String(r.type || "").trim() || "Truck",
+    pump:    String(r.pump || "").trim(),
+    litres:  num(r.litres),
+    rate:    num(r.rate),
+    amount:  num(r.amount),
+    odo:     num(r.odometer),
+    flags:   []
+  })).filter(r => r.vehicle || r.dateObj);
+
+  const today = new Date(); today.setHours(23,59,59,999);
+
+  // future-dated
+  rows.forEach(r => { if(r.dateObj && r.dateObj > today) r.flags.push("future"); });
+
+  // possible duplicate — same vehicle + date + litres + amount
+  const seen = {};
+  rows.forEach(r => {
+    const k = [r.vehicle, fmtDate(r.dateObj), r.litres, r.amount].join("|");
+    (seen[k] = seen[k] || []).push(r);
+  });
+  Object.values(seen).forEach(g => { if(g.length > 1) g.forEach(r => r.flags.push("dup")); });
+
+  // odo regression — per vehicle, date ke order me
+  const byVeh = {};
+  rows.forEach(r => (byVeh[r.vehicle] = byVeh[r.vehicle] || []).push(r));
+  Object.values(byVeh).forEach(list => {
+    const sorted = list.slice().sort((a,b) => (a.dateObj || 0) - (b.dateObj || 0));
+    let prev = null;
+    sorted.forEach(r => {
+      if(r.odo != null){
+        if(prev != null && r.odo < prev) r.flags.push("odo");
+        else prev = r.odo;
+      }
+    });
+  });
+
+  // naya pehle
+  rows.sort((a,b) => (b.dateObj || 0) - (a.dateObj || 0));
+  ALL = rows;
+
+  truckCombo.setValues([...new Set(ALL.map(r => r.vehicle).filter(Boolean))].sort());
+  pumpCombo.setValues([...new Set(ALL.map(r => r.pump).filter(Boolean))].sort());
+  apply();
+}
+
+/* searchable dropdown — used for Truck and Pump/Vendor fields */
+function makeCombo(inputId, listId, allLabel){
+  const input = $(inputId), list = $(listId);
+  let values = [], committed = "", hl = -1;
+
+  function filtered(q){
+    q = q.trim().toLowerCase();
+    return q ? values.filter(v => v.toLowerCase().includes(q)) : values;
+  }
+  function render(q){
+    const rows = filtered(q || "");
+    const allMatches = !q || allLabel.toLowerCase().includes(q.trim().toLowerCase());
+    let html = "";
+    if(allMatches) html += '<div class="combo-opt' + (committed === "" ? " active" : "") + '" data-value="">' + allLabel + "</div>";
+    if(rows.length) html += rows.map(v => '<div class="combo-opt' + (v === committed ? " active" : "") + '" data-value="' + esc(v) + '">' + esc(v) + "</div>").join("");
+    else if(!allMatches) html += '<div class="combo-empty">No match</div>';
+    list.innerHTML = html;
+    hl = -1;
+  }
+  function open(){ render(input.value); list.classList.add("open"); }
+  function close(){ list.classList.remove("open"); }
+  function highlight(opts){
+    opts.forEach((o,i) => o.classList.toggle("hl", i === hl));
+    if(opts[hl]) opts[hl].scrollIntoView({block:"nearest"});
+  }
+  function commit(val){
+    committed = val; input.value = val; close();
+    page = 1; apply();
+  }
+
+  input.addEventListener("focus", open);
+  input.addEventListener("input", open);
+  input.addEventListener("keydown", e => {
+    if(e.key === "ArrowDown"){
+      e.preventDefault();
+      if(!list.classList.contains("open")) open();
+      const opts = [...list.querySelectorAll(".combo-opt")];
+      hl = Math.min(hl+1, opts.length-1); highlight(opts);
+    }else if(e.key === "ArrowUp"){
+      e.preventDefault();
+      const opts = [...list.querySelectorAll(".combo-opt")];
+      hl = Math.max(hl-1, 0); highlight(opts);
+    }else if(e.key === "Enter"){
+      e.preventDefault();
+      const opts = [...list.querySelectorAll(".combo-opt")];
+      if(hl >= 0 && opts[hl]) commit(opts[hl].dataset.value);
+      else{
+        const exact = values.find(v => v.toLowerCase() === input.value.trim().toLowerCase());
+        if(exact) commit(exact); else if(!input.value.trim()) commit("");
+      }
+    }else if(e.key === "Escape"){ input.value = committed; close(); input.blur(); }
+  });
+  list.addEventListener("mousedown", e => {
+    e.preventDefault();
+    const opt = e.target.closest(".combo-opt");
+    if(opt) commit(opt.dataset.value);
+  });
+  input.addEventListener("blur", () => { setTimeout(() => { close(); input.value = committed; }, 120); });
+
+  return {
+    setValues(v){
+      values = v;
+      if(committed && !values.includes(committed)){ committed = ""; input.value = ""; }
+    },
+    reset(){ committed = ""; input.value = ""; close(); }
+  };
+}
+const truckCombo = makeCombo("fTruck", "fTruckList", "All trucks");
+const pumpCombo  = makeCombo("fPump",  "fPumpList",  "All pumps");
+
+/* ============================================================
+   5. FILTER + RENDER
+   ============================================================ */
+function apply(){
+  const t = $("fTruck").value, p = $("fPump").value;
+  const flag = $("fFlag").value;
+  const from = $("fFrom").value ? new Date($("fFrom").value + "T00:00:00") : null;
+  const to   = $("fTo").value   ? new Date($("fTo").value   + "T23:59:59") : null;
+
+  VIEW = ALL.filter(r =>
+    (!t || r.vehicle === t) &&
+    (!p || r.pump === p) &&
+    (!from || (r.dateObj && r.dateObj >= from)) &&
+    (!to   || (r.dateObj && r.dateObj <= to)) &&
+    (!flag ||
+      (flag === "any"  ? r.flags.length > 0 :
+       flag === "none" ? r.flags.length === 0 :
+       r.flags.includes(flag)))
+  );
+
+  const maxPage = Math.max(1, Math.ceil(VIEW.length / PAGE_SIZE));
+  if(page > maxPage) page = maxPage;
+  renderMetrics(t);
+  renderTable(maxPage);
+}
+
+function renderMetrics(truck){
+  const box = $("metrics");
+  if(!truck){
+    box.innerHTML = '<div class="hint">Select a truck to view Mileage and Cost/km metrics.</div>';
+    return;
+  }
+  const rows = VIEW.filter(r => r.odo != null && r.dateObj)
+                   .sort((a,b) => a.dateObj - b.dateObj);
+  const litres = VIEW.reduce((s,r) => s + (r.litres || 0), 0);
+  const amount = VIEW.reduce((s,r) => s + (r.amount || 0), 0);
+  const km = rows.length > 1 ? rows[rows.length-1].odo - rows[0].odo : 0;
+
+  // pehli fill ka diesel distance me count nahi hota
+  const usedLitres = rows.length > 1
+    ? rows.slice(1).reduce((s,r) => s + (r.litres || 0), 0) : 0;
+
+  const mileage = (km > 0 && usedLitres > 0) ? km / usedLitres : null;
+  const costKm  = (km > 0 && amount > 0)     ? amount / km     : null;
+
+  box.innerHTML =
+    '<div class="metric-grid">' +
+      metric("Mileage", mileage == null ? "—" : mileage.toFixed(2) + " km/L", "Distance ÷ diesel filled") +
+      metric("Cost / km", costKm == null ? "—" : "₹" + costKm.toFixed(2), "Spend ÷ distance") +
+      metric("Distance", km > 0 ? fmtNum(km,1) + " km" : "—", "Odometer span") +
+      metric("Diesel", fmtNum(litres,2) + " L", VIEW.length + " fills") +
+      metric("Spend", "₹" + fmtNum(amount,2), truck) +
+    "</div>";
+}
+const metric = (k,v,s) =>
+  '<div class="metric"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+"</div></div>";
+
+const FLAG_LABEL = {future:["Future-dated","f-future"], dup:["Possible duplicate","f-dup"], odo:["Odo regression","f-odo"]};
+
+function renderTable(maxPage){
+  const start = (page-1) * PAGE_SIZE;
+  const slice = VIEW.slice(start, start + PAGE_SIZE);
+
+  $("count").innerHTML = "<b>" + VIEW.length + "</b> entries" +
+    (VIEW.length !== ALL.length ? " (filtered)" : "") +
+    " · showing page " + page + " of " + maxPage;
+  $("prev").disabled = page <= 1;
+  $("next").disabled = page >= maxPage;
+  $("empty").style.display = VIEW.length ? "none" : "block";
+
+  $("tbody").innerHTML = slice.map(r =>
+    '<tr class="' + (r.flags.length ? "flagged" : "") + '">' +
+      "<td>" + fmtDate(r.dateObj) + "</td>" +
+      '<td class="vehicle">' + esc(r.vehicle) + "</td>" +
+      '<td><span class="pill ' + (/truck/i.test(r.type) ? "truck" : "other") + '">' + esc(r.type) + "</span></td>" +
+      "<td>" + esc(r.pump) + "</td>" +
+      '<td class="num">' + fmtNum(r.litres,2) + "</td>" +
+      '<td class="num">' + fmtNum(r.rate,2) + "</td>" +
+      '<td class="num">' + fmtNum(r.amount,2) + "</td>" +
+      '<td class="num">' + fmtNum(r.odo,1) + "</td>" +
+      "<td>" + r.flags.map(f => '<span class="flag ' + FLAG_LABEL[f][1] + '">' + FLAG_LABEL[f][0] + "</span>").join("") + "</td>" +
+    "</tr>"
+  ).join("");
+}
+const esc = s => String(s == null ? "" : s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ============================================================
+   6. EVENTS
+   ============================================================ */
+["fFlag","fFrom","fTo"].forEach(id =>
+  $(id).addEventListener("change", () => { page = 1; apply(); })
+);
+["fFrom","fTo"].forEach(id => {
+  const el = $(id);
+  el.addEventListener("click", () => { try{ el.showPicker && el.showPicker(); }catch(e){} });
+  el.addEventListener("focus", () => { try{ el.showPicker && el.showPicker(); }catch(e){} });
+});
+document.addEventListener("mousedown", e => {
+  if(!e.target.closest("#fTruckWrap")) $("fTruckList").classList.remove("open");
+  if(!e.target.closest("#fPumpWrap"))  $("fPumpList").classList.remove("open");
+});
+$("fClear").addEventListener("click", () => {
+  truckCombo.reset(); pumpCombo.reset();
+  $("fFlag").value = ""; $("fFrom").value = ""; $("fTo").value = "";
+  page = 1; apply();
+});
+$("refreshBtn").addEventListener("click", () => load());
+$("exportCsv").addEventListener("click", () => {
+  const cols = ["Date","Vehicle","Type","Pump","Litres","Rate","Amount","Odometer","Flags"];
+  const csvCell = v => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const lines = [cols.join(",")];
+  VIEW.forEach(r => {
+    lines.push([
+      fmtDate(r.dateObj), r.vehicle, r.type, r.pump,
+      r.litres ?? "", r.rate ?? "", r.amount ?? "", r.odo ?? "",
+      r.flags.map(f => FLAG_LABEL[f][0]).join(" / ")
+    ].map(csvCell).join(","));
+  });
+  const blob = new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = "daman-diesel-log-" + stamp + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+$("prev").addEventListener("click", () => { if(page > 1){ page--; apply(); window.scrollTo({top:0,behavior:"smooth"}); } });
+$("next").addEventListener("click", () => { page++; apply(); window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* ============================================================
+   7. DEMO DATA (SHEET_ID khaali ho to)
+   ============================================================ */
+function demoRows(){
+  const trucks = ["CG08BC8411","CG08BA4711","CG08BD3411","CG08BB0411","CG08BE2211","CG08BF9011"];
+  const pumps  = ["BPCL OTP RS","HPCL Highway","IOCL Raipur","Reliance Bhilai"];
+  const out = [];
+  const odo = {}; trucks.forEach((t,i) => odo[t] = 60000 + i*9000);
+  for(let d = 0; d < 60; d++){
+    const day = new Date(); day.setDate(day.getDate() - d + 3);
+    trucks.forEach(t => {
+      if(Math.random() > .55) return;
+      const litres = Math.round((80 + Math.random()*190) * 100) / 100;
+      const rate   = Math.round((92 + Math.random()*3) * 100) / 100;
+      odo[t] += Math.round(litres * (3.4 + Math.random()) * 10) / 10;
+      const shownOdo = Math.random() > .95 ? odo[t] - 4000 : odo[t];
+      out.push({
+        date: pad(day.getDate())+"-"+pad(day.getMonth()+1)+"-"+day.getFullYear(),
+        vehicle: t, type:"Truck", pump: pumps[Math.floor(Math.random()*pumps.length)],
+        litres: litres.toFixed(2), rate: rate.toFixed(2),
+        amount: (litres*rate).toFixed(2), odometer: shownOdo.toFixed(1)
+      });
+    });
+  }
+  return out;
+}
+
+load();
+</script>
+</body>
+</html>
