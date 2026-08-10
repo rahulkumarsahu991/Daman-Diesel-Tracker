@@ -143,6 +143,27 @@
   .btn:hover:not(:disabled){background:#1c2158}
   .btn:disabled{opacity:.4;cursor:not-allowed}
 
+  /* ---- top consumer (blinking highlight) ---- */
+  .top-consumer{
+    margin-top:16px;padding:16px 20px;border-radius:12px;
+    background:linear-gradient(135deg,rgba(242,138,27,.16),rgba(27,31,79,.55));
+    border:1.5px solid var(--brand-orange);
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    animation:topConsumerPulse 2s ease-in-out infinite;
+  }
+  .top-consumer .tc-icon{font-size:30px;line-height:1;flex:none}
+  .top-consumer .tc-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-orange);font-weight:700}
+  .top-consumer .tc-vehicle{font-size:22px;font-weight:800;color:var(--txt);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .top-consumer .tc-stats{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .top-consumer .tc-empty{color:var(--dim);font-style:italic;font-size:13px}
+  @keyframes topConsumerPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(242,138,27,.45);border-color:var(--brand-orange)}
+    50%{box-shadow:0 0 24px 5px rgba(242,138,27,.6);border-color:#ffb066}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .top-consumer{animation:none}
+  }
+
   /* ---- metrics ---- */
   .metrics{margin-top:16px;border:1px dashed var(--line-soft);border-radius:12px;padding:26px 20px;min-height:120px;
            display:flex;align-items:center;justify-content:center}
@@ -307,6 +328,9 @@
     </div>
     <button class="btn" id="fClear">Clear filters</button>
   </div>
+
+  <!-- top consumer -->
+  <div class="card top-consumer" id="topConsumer"></div>
 
   <!-- metrics -->
   <div class="metrics" id="metrics">
@@ -636,6 +660,37 @@ function apply(){
   if(page > maxPage) page = maxPage;
   renderMetrics(t);
   renderTable(maxPage);
+  renderTopConsumer();
+}
+
+function renderTopConsumer(){
+  const box = $("topConsumer");
+  if(!VIEW.length){
+    box.innerHTML = '<div class="tc-empty">No diesel data for the current filters.</div>';
+    return;
+  }
+  const totals = {}, fills = {};
+  VIEW.forEach(r => {
+    if(!r.vehicle) return;
+    totals[r.vehicle] = (totals[r.vehicle] || 0) + (r.litres || 0);
+    fills[r.vehicle] = (fills[r.vehicle] || 0) + 1;
+  });
+  let topVehicle = null, topLitres = -1;
+  for(const v in totals){
+    if(totals[v] > topLitres){ topLitres = totals[v]; topVehicle = v; }
+  }
+  if(!topVehicle){
+    box.innerHTML = '<div class="tc-empty">No diesel data for the current filters.</div>';
+    return;
+  }
+  const filtered = VIEW.length !== ALL.length;
+  box.innerHTML =
+    '<div class="tc-icon">⛽</div>' +
+    '<div>' +
+      '<div class="tc-label">Highest Diesel Consumer' + (filtered ? " · current filters" : "") + '</div>' +
+      '<div class="tc-vehicle">' + esc(topVehicle) + '</div>' +
+      '<div class="tc-stats">' + fmtNum(topLitres,2) + ' L total · ' + fills[topVehicle] + ' fills</div>' +
+    '</div>';
 }
 
 function renderMetrics(truck){
