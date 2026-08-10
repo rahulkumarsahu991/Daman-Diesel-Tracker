@@ -608,7 +608,15 @@ const pumpCombo  = makeCombo("fPump",  "fPumpList",  "All pumps");
    5. FILTER + RENDER
    ============================================================ */
 function apply(){
-  const t = $("fTruck").value, p = $("fPump").value;
+  const t = $("fTruck").value;
+
+  // pump list narrows to only the pumps this truck has actually used
+  const pumpsForTruck = t
+    ? [...new Set(ALL.filter(r => r.vehicle === t).map(r => r.pump).filter(Boolean))].sort()
+    : [...new Set(ALL.map(r => r.pump).filter(Boolean))].sort();
+  pumpCombo.setValues(pumpsForTruck);
+
+  const p = $("fPump").value; // re-read: setValues() may have reset it if it's no longer valid
   const flag = $("fFlag").value;
   const from = $("fFrom").value ? new Date($("fFrom").value + "T00:00:00") : null;
   const to   = $("fTo").value   ? new Date($("fTo").value   + "T23:59:59") : null;
