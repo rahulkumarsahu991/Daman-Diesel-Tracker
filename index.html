@@ -663,15 +663,17 @@ function apply(){
   renderTopConsumer();
 }
 
+const TANKER_RE = /tanker|tenkar/i;
+
 function renderTopConsumer(){
   const box = $("topConsumer");
-  if(!VIEW.length){
+  const rows = VIEW.filter(r => r.vehicle && !TANKER_RE.test(r.vehicle));
+  if(!rows.length){
     box.innerHTML = '<div class="tc-empty">No diesel data for the current filters.</div>';
     return;
   }
   const totals = {}, fills = {};
-  VIEW.forEach(r => {
-    if(!r.vehicle) return;
+  rows.forEach(r => {
     totals[r.vehicle] = (totals[r.vehicle] || 0) + (r.litres || 0);
     fills[r.vehicle] = (fills[r.vehicle] || 0) + 1;
   });
