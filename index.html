@@ -711,16 +711,19 @@ function renderMetrics(truck){
     box.innerHTML = '<div class="hint">Select a truck to view Mileage and Cost/km metrics.</div>';
     return;
   }
-  const rows = VIEW.filter(r => r.odo != null && r.dateObj)
-                   .sort((a,b) => a.dateObj - b.dateObj);
-  const litres = VIEW.reduce((s,r) => s + (r.litres || 0), 0);
+  const dated = VIEW.filter(r => r.dateObj).sort((a,b) => a.dateObj - b.dateObj);
   const amount = VIEW.reduce((s,r) => s + (r.amount || 0), 0);
-  const km = rows.length > 1 ? rows[rows.length-1].odo - rows[0].odo : 0;
 
   // starting (From) date ka poora diesel — chahe us din ek fill ho ya kai —
-  // distance/mileage average me count nahi hota, sirf uski odo reading
+  // total aur average dono me count nahi hota, sirf uski odo reading
   // starting point ke roop me use hoti hai
-  const startDateKey = rows.length ? fmtDate(rows[0].dateObj) : null;
+  const startDateKey = dated.length ? fmtDate(dated[0].dateObj) : null;
+  const usedRows = VIEW.filter(r => !r.dateObj || fmtDate(r.dateObj) !== startDateKey);
+  const litres = usedRows.reduce((s,r) => s + (r.litres || 0), 0);
+
+  const rows = VIEW.filter(r => r.odo != null && r.dateObj)
+                   .sort((a,b) => a.dateObj - b.dateObj);
+  const km = rows.length > 1 ? rows[rows.length-1].odo - rows[0].odo : 0;
   const usedLitres = rows.length > 1
     ? rows.filter(r => fmtDate(r.dateObj) !== startDateKey).reduce((s,r) => s + (r.litres || 0), 0)
     : 0;
@@ -733,7 +736,7 @@ function renderMetrics(truck){
       metric("Mileage", mileage == null ? "—" : mileage.toFixed(2) + " km/L", "Distance ÷ diesel filled") +
       metric("Cost / km", costKm == null ? "—" : "₹" + costKm.toFixed(2), "Spend ÷ distance") +
       metric("Distance", km > 0 ? fmtNum(km,1) + " km" : "—", "Odometer span") +
-      metric("Diesel", fmtNum(litres,2) + " L", VIEW.length + " fills") +
+      metric("Diesel", fmtNum(litres,2) + " L", usedRows.length + " fills · From-date excluded") +
       metric("Spend", "₹" + fmtNum(amount,2), truck) +
     "</div>";
 }
