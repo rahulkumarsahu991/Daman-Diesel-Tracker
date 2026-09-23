@@ -724,12 +724,11 @@ function renderMetrics(truck){
   const rows = VIEW.filter(r => r.odo != null && r.dateObj)
                    .sort((a,b) => a.dateObj - b.dateObj);
   const km = rows.length > 1 ? rows[rows.length-1].odo - rows[0].odo : 0;
-  const usedLitres = rows.length > 1
-    ? rows.filter(r => fmtDate(r.dateObj) !== startDateKey).reduce((s,r) => s + (r.litres || 0), 0)
-    : 0;
 
-  const mileage = (km > 0 && usedLitres > 0) ? km / usedLitres : null;
-  const costKm  = (km > 0 && amount > 0)     ? amount / km     : null;
+  // Mileage bhi wahi "Diesel" total use karta hai jo tile me dikhta hai
+  // (From-date excluded), taaki Distance ÷ Diesel = Mileage screen par match kare
+  const mileage = (km > 0 && litres > 0) ? km / litres : null;
+  const costKm  = (km > 0 && amount > 0) ? amount / km : null;
 
   box.innerHTML =
     '<div class="metric-grid">' +
