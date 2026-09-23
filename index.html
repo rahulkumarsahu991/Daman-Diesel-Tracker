@@ -717,9 +717,13 @@ function renderMetrics(truck){
   const amount = VIEW.reduce((s,r) => s + (r.amount || 0), 0);
   const km = rows.length > 1 ? rows[rows.length-1].odo - rows[0].odo : 0;
 
-  // pehli fill ka diesel distance me count nahi hota
+  // starting (From) date ka poora diesel — chahe us din ek fill ho ya kai —
+  // distance/mileage average me count nahi hota, sirf uski odo reading
+  // starting point ke roop me use hoti hai
+  const startDateKey = rows.length ? fmtDate(rows[0].dateObj) : null;
   const usedLitres = rows.length > 1
-    ? rows.slice(1).reduce((s,r) => s + (r.litres || 0), 0) : 0;
+    ? rows.filter(r => fmtDate(r.dateObj) !== startDateKey).reduce((s,r) => s + (r.litres || 0), 0)
+    : 0;
 
   const mileage = (km > 0 && usedLitres > 0) ? km / usedLitres : null;
   const costKm  = (km > 0 && amount > 0)     ? amount / km     : null;
