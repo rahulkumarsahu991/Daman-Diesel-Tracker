@@ -708,7 +708,16 @@ function renderTopConsumer(){
 function renderMetrics(truck){
   const box = $("metrics");
   if(!truck){
-    box.innerHTML = '<div class="hint">Select a truck to view Mileage and Cost/km metrics.</div>';
+    const allLitres = VIEW.reduce((s,r) => s + (r.litres || 0), 0);
+    const allAmount = VIEW.reduce((s,r) => s + (r.amount || 0), 0);
+    box.innerHTML =
+      '<div class="metric-grid">' +
+        metric("Mileage", "—", "Select a truck") +
+        metric("Cost / km", "—", "Select a truck") +
+        metric("Distance", "—", "Select a truck") +
+        metric("Diesel", fmtNum(allLitres,2) + " L", VIEW.length + " fills") +
+        metric("Spend", "₹" + fmtNum(allAmount,2), "All trucks") +
+      "</div>";
     return;
   }
   const dated = VIEW.filter(r => r.dateObj).sort((a,b) => a.dateObj - b.dateObj);
